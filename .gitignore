@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+.coverage
+*.log
+.env
+data/
+models/
+*.safetensors
+*.gguf
+node_modules/

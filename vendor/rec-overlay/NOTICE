@@ -1,0 +1,29 @@
+bable-flint
+Copyright 2026 herdr contributors
+
+This folder contains files derived from rec 0.1.1 by Recursive (https://github.com/recursive-oss/rec),
+licensed under the Apache License, Version 2.0 (see LICENSE). rec ships no NOTICE file.
+
+The app also ships rec 0.1.1's own binary unchanged (rec-darwin-arm64 from https://github.com/recursive-oss/rec/releases/tag/v0.1.1,
+SHA-256 76874faf4ba16b1907ebef0d6a92147a1f81b95df92d805ae5b98019df265bed) as Contents/Resources/flint-mac/rec.
+
+Modified rec files (each carries a "Modified from recursive-oss/rec 0.1.1" line at its top):
+  overlay/rec_mlx/chat.py              Claude Code billing stamp pinned, opencode <env> block moved to the user turn
+  overlay/rec_mlx/engine.py            disk prompt cache, common_prefix from prefix.py
+  overlay/rec_mlx/prefix.py            64 prefix checkpoints instead of 2, common_prefix helper shared with engine.py
+  overlay/rec_mlx/scheduler.py         disk prompt cache saved while idle, numbers-only metrics to REC_METRICS
+  overlay/rec_mlx/server.py            server sampling defaults and answer cap from REC_* variables, /v1/responses, model name claude-flint,
+                                       tool_choice=none keeps the tools in the prompt under Flint grammar, disk_cache=false, listen backlog 32
+  overlay/rec_mlx/kernels/device.py    M4 Max (40-core GPU) workers 76/64/64, REC_EXP_WORKERS and REC_EXP_CHUNK
+  overlay/rec_mlx/kernels/sampling.py  filtered sampler on M4 Max when workers != 36
+
+Added files (not part of rec), also under the Apache License, Version 2.0:
+  overlay/rec_mlx/disk_cache.py, overlay/rec_mlx/responses.py, install.py, tests/test_chat.py,
+  tests/test_responses.py, tests/test_disk_cache_pieces.py, tests/test_install.py, tests/test_server_defaults.py,
+  dev/mac_disk_cache_check.py, relay/flint_codex_relay.py, tests/test_codex_relay.py, README.md,
+  README.en.md
+
+Bundled font:
+  bable-flint.app/Contents/Resources/Fonts/PretendardVariable.ttf  Pretendard 1.3.9 by Kil Hyung-jin (https://github.com/orioncactus/pretendard),
+  licensed under the SIL Open Font License, Version 1.1 (OFL-Pretendard.txt, shipped next to the font
+  in bable-flint.app). Reserved Font Name: Pretendard. The font file is unmodified.

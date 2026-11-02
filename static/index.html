@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flint Kit — Flint 실행부터 튜닝까지</title>
+  <meta name="description" content="Flint 실행부터 튜닝까지, 한곳에서. 내 Mac의 Flint 실행·성능 튜닝·CLI 연결을 돕는 독립 로컬 도구입니다.">
+  <meta name="theme-color" content="#244f3e">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+  <script src="/navigation.js" defer></script>
+  <script src="/visuals.js" defer></script>
+</head>
+<body>
+<a href="#main" class="skip">본문으로 이동</a>
+<aside class="sidebar">
+  <a class="brand" href="/" aria-label="Flint Kit 홈"><img class="mark" src="/favicon.svg" width="42" height="42" alt=""><span>flint <b>kit</b></span></a>
+  <p class="eyebrow">YOUR FLINT TOOLKIT</p>
+  <nav aria-label="주 메뉴">
+    <button class="nav" data-tab="overview"><span>◈</span> 사용 안내</button>
+    <button class="nav active" data-tab="setup"><span>↓</span> 엔진 & 모델</button>
+    <button class="nav" data-tab="tuning"><span>⌁</span> 성능 튜닝</button>
+    <button class="nav" data-tab="clients"><span>⇄</span> 클라이언트</button>
+    <button class="nav" data-tab="settings"><span>⚙</span> 설정 & 캐시</button>
+    <button class="nav" data-tab="activity"><span>≡</span> 상태 & 로그</button>
+  </nav>
+  <div class="sidebar-bottom"><span class="dot"></span> 127.0.0.1 전용 <small>오픈 코드 · 내 데이터 · 내 제어</small></div>
+</aside>
+<main id="main">
+  <header><span id="breadcrumb">워크스페이스 / 엔진 & 모델</span><span class="local-badge">LOCAL FIRST <span class="dot"></span></span></header>
+  <section id="monitor" class="workspace-monitor" aria-label="항상 표시되는 서버 대시보드">
+    <div class="monitor-heading">
+      <div class="monitor-identity"><h2>Flint Kit <span class="model-badge">Flint INT4</span></h2><span id="engine-state" class="pill" role="status">상태 확인 중</span></div>
+      <div class="monitor-controls">      <button id="start" class="primary" disabled>서버 시작 ↗</button><button id="stop" class="secondary" disabled>서버 중지</button></div>
+    </div>
+    <div class="monitor-toolbar">
+      <p id="engine-description" class="muted">실제 로컬 런타임 상태를 확인합니다.</p>
+      <label class="chart-interval">차트 단위
+        <select id="chart-interval" aria-describedby="chart-interval-status" disabled>
+          <option value="5">5초 · 1분 보기</option>
+          <option value="60">1분 · 12분 보기</option>
+          <option value="300" selected>5분 · 1시간 보기</option>
+        </select>
+      </label>
+      <span id="chart-interval-status" class="chart-interval-status" role="status">시간 단위 선택을 준비하고 있습니다.</span>
+    </div>
+    <div class="monitor-stats">
+      <article><span>생성 · 최근 기록</span><strong id="decode">— <small>tok/s</small></strong><div id="decode-chart" class="request-chart" role="img" aria-label="생성 속도 · 확인 중" data-empty="확인 중"><div id="decode-bars" class="chart-bars" aria-hidden="true"></div><canvas id="decode-canvas" aria-hidden="true"></canvas></div><p id="decode-chart-label" class="chart-axis">확인 중</p></article>
+      <article><span>입력 · 최근 기록</span><strong id="prefill">— <small>tok/s</small></strong><div id="prefill-chart" class="request-chart" role="img" aria-label="입력 처리 속도 · 확인 중" data-empty="확인 중"><div id="prefill-bars" class="chart-bars" aria-hidden="true"></div><canvas id="prefill-canvas" aria-hidden="true"></canvas></div><p id="prefill-chart-label" class="chart-axis">확인 중</p></article>
+      <article><span>첫 응답 대기</span><strong id="ttft">— <small>s</small></strong><div id="ttft-chart" class="request-chart" role="img" aria-label="첫 응답 대기 · 확인 중" data-empty="확인 중"><div id="ttft-bars" class="chart-bars" aria-hidden="true"></div><canvas id="ttft-canvas" aria-hidden="true"></canvas></div><p id="ttft-chart-label" class="chart-axis">확인 중</p></article>
+      <article><span>엔진 메모리</span><strong id="memory">— <small>GiB</small></strong><div class="memory-chart"><span id="memory-capacity">측정 대기</span><meter id="memory-meter" min="0" max="1" value="0" aria-label="물리 메모리 대비 엔진 RSS 합계" hidden></meter></div><p id="memory-label">RSS · 5초 간격</p></article>
+    </div>
+    <div class="monitor-footer"><code id="api-base">—</code><span id="request-label">요청 기록 없음</span><button id="monitor-details" class="text-button" data-goto="activity">상태 상세 →</button></div>
+    <div id="monitor-error" class="monitor-error hidden" role="status"></div>
+    <div id="connection" class="alert hidden" role="alert"></div>
+    <div id="job" class="job hidden" aria-live="polite"><div><strong id="job-action"></strong><p id="job-message"></p></div><button id="cancel" class="secondary">작업 취소</button></div>
+  </section>
+  <div id="workspace-content" class="workspace-content" tabindex="0" role="region" aria-label="설정 및 상세 내용">
+  <div id="notice" class="notice hidden" role="status"></div>
+  <section id="overview" class="tab">
+    <div class="section-title"><p class="eyebrow">FLINT, MADE SIMPLE</p><h1>Flint 실행부터 튜닝까지,<br><em>한곳에서.</em></h1><p class="muted">내 Mac의 Flint를 더 쉽게 실행하고 조정하는 도구입니다. 상단에서 상태를 확인하고 아래에서 설정을 관리하세요.</p></div>
+    <div class="two-col">
+      <article class="panel"><div class="panel-heading"><h2>모든 단계가 보이는 AI</h2><span class="tag">TRANSPARENT</span></div><ol class="steps"><li><span>01</span><div><b>읽을 수 있는 런타임 패치</b><p>Apache-2.0 Python overlay, 고정 rec 해시 검증</p></div></li><li><span>02</span><div><b>측정하고 결정하는 튜닝</b><p>실제 요청으로 후보를 비교하고 3% 초과 개선만 채택</p></div></li><li><span>03</span><div><b>기존 환경을 건드리지 않는 연동</b><p>선택한 CLI의 전용 실행기만 생성, 자동 업데이트 없음</p></div></li></ol></article>
+      <article class="panel tinted"><p class="eyebrow">A NOTE ON PRIVACY</p><h2>로컬 실행과<br>완전한 오프라인은 다릅니다.</h2><p>모델 API와 제어 서버는 루프백 전용입니다. 다운로드와 외부 CLI는 네트워크를 사용할 수 있습니다. 보안 감사가 완료된 제품이나 모든 외부 통신을 차단하는 도구는 아닙니다.</p><button class="text-button" data-goto="clients">연동 범위 확인 →</button></article>
+    </div>
+  </section>
+
+  <section id="setup" class="tab active">
+    <div class="section-title"><p class="eyebrow">ENGINE & MODEL</p><h1>한 번 준비하고, 로컬에서.</h1><p>엔진 설치 → 모델 다운로드 → 검증 → 서버 시작 순서로 준비하세요. 별도 앱은 필요하지 않습니다.</p></div>
+    <p>macOS 15 이상이 필요합니다. 버전을 확인할 수 없거나 지원하지 않으면 설치·모델 준비·서버 시작·튜닝을 진행하지 않습니다.</p><p id="setup-requirement" class="alert hidden" role="alert"></p>
+    <article class="panel"><div class="panel-heading"><h2>01 / 엔진 설치</h2><span id="installed" class="tag">미설치</span></div><p>공식 rec <b>v0.1.1</b>을 SHA-256으로 확인하고, Flint Kit 전용 디렉터리에 런타임과 Apache-2.0 패치를 설치합니다. Apple Silicon · M4 Pro/Max 또는 M5 Pro/Max · 48GB 이상이 필요합니다.</p><code class="hash">SHA-256 · 76874faf…265bed</code><div class="button-row"><button data-action="/api/install" data-source="download" data-confirm="GitHub 공식 릴리스에서 rec를 다운로드하고 Flint Kit 런타임을 설치할까요? 기존 rec 모델이 있으면 원본을 변경하지 않고 APFS 복제 후 검증합니다. 네트워크와 디스크를 사용합니다." class="primary">공식 다운로드 설치 ↗</button></div></article>
+    <article class="panel"><div class="panel-heading"><h2>02 / 모델 준비</h2><span id="models" class="tag">확인 중</span></div><p>기존 <code>~/.local/share/rec/models</code>의 Flint 모델이 있으면 APFS 복제로 가져와 검증합니다. 원본은 변경하지 않으며, 사본이 변경되면 추가 공간이 필요할 수 있습니다. 없으면 약 22.57GB(21.02GiB)를 다운로드합니다. 이미 시작한 Flint Kit 다운로드는 덮어쓰지 않고 이어받습니다.</p><div class="button-row"><button data-action="/api/models/pull" data-confirm="기존 rec 모델을 APFS 복제하고 검증하거나, 없으면 Flint 모델 약 22.57GB를 다운로드/이어받을까요? 복제 실패 시 일반 복사나 다운로드로 자동 전환하지 않습니다." class="primary">가져오기 / 다운로드 / 이어받기</button><button data-action="/api/models/verify" data-confirm="rec doctor로 로컬 모델 무결성을 검증할까요? 큰 파일을 읽어 시간이 걸릴 수 있습니다." class="secondary">무결성 검증</button></div></article>
+    <article class="panel"><h2>03 / 서버 시작</h2><p>대시보드에서 서버를 시작하세요. 다른 모델 엔진이 감지되면 중복 메모리 사용을 방지하기 위해 시작하지 않습니다. 시작 실패와 포트 충돌은 로그에 표시됩니다.</p><p class="hint">데이터 위치 <code id="data-dir"></code></p><p class="hint">이 앱은 다운로드·설치·모델 실행을 자동으로 시작하지 않습니다.</p></article>
+  </section>
+
+  <section id="tuning" class="tab">
+    <div class="section-title"><p class="eyebrow">MEASURE, THEN OPTIMIZE</p><h1>추측 대신, 측정.</h1><p>실제 엔진을 재시작하며 후보별로 비교합니다. 목업 결과나 하드웨어 홍보 수치를 표시하지 않습니다.</p></div>
+    <article class="panel"><div class="panel-heading"><h2 id="hardware-title">감지한 Mac 기준 후보</h2><span class="tag">MEASURE ON THIS MAC</span></div><div id="hardware-details"></div><div id="hardware-checks"></div><p id="hardware-warning"></p><div id="candidate-list" class="candidate-list"></div><p id="candidate-description"></p><p>원본 앱 수식으로 계산한 후보입니다. 이 칩·코어 조합은 우리가 실측 검증하기 전이며, 이 Mac에서 직접 측정해 채택합니다. 과거 독립 수용 시험 범위는 M4 Pro 20 GPU 코어의 현재값 시험이며, 모든 후보의 안정성·성능 향상을 보장하지 않습니다. M5의 비기본 workers도 미검증입니다.</p><div class="callout"><b>확인된 규칙 + 투명한 독립 구현</b><p>짧은/긴 입력 각각 3회의 metrics decode 속도 upper median을 구해 평균을 냅니다.     측정 기준보다 <b>엄격히 3% 초과</b> 개선된 후보만 성능 개선으로 채택합니다. 속도 측정 temperature 0.6, 출력 256토큰. 긴 filler 입력값 32,000과 prefill 진단 8,000은 <b>nominal 값으로 실제 tokenizer 토큰 수가 아닙니다.</b> 후보 탐색 순서·복구 정책은 독립 구현이며 원본 전체와 같다는 보장은 없습니다.</p></div><p>    별도 greedy 요청(temperature 0, seed 0, 최대 96토큰)의 message JSON 해시를 측정 기준과 비교합니다. seed 지원이나 정답의 의미적 정확성까지 보장하지는 않습니다. 측정 중 SSD 캐시를 끄고 외부 CLI 요청을 거부합니다. 긴 입력을 위해 문맥을 최소 65,536으로 임시 확장한 동일 조건에서 후보를 비교하고 복원합니다. 답변 내용은 저장하지 않습니다.</p><div class="button-row"><button id="tune" class="primary">실측 자동 튜닝 시작 ↗</button><button id="baseline" class="secondary">현재값만 측정 · 채택 없음</button></div></article>
+    <article class="panel"><h2>worker와 chunk는 다른 지표로 선택합니다</h2><p>감지 기반 worker 후보를 위의 decode 점수로 비교합니다. 선택한 worker에서 고정 chunk 후보 1024/2048/4096을 별도로 비교하며, 매번 새 UUID를 쓴 nominal 8,000 입력을 3회 측정합니다. chunk 점수는 실제 <code>prefilled_tokens / prefill_seconds</code>의 upper median입니다. 각 단계별 측정 기준 대비 엄격한 3% 초과 개선만 성능 후보로 선택합니다.</p><p id="tuning-reliability">서버의 기준 응답·최종 조합 검증 지원 여부를 확인합니다.</p><p id="tuning-recovery"></p></article>
+    <article class="panel"><h2>문맥은 유지 · 캐시 용량은 디스크 기준 자동 선택</h2><p id="calibration-plan"></p><p>전체 자동 튜닝 성공 시 문맥과 캐시 사용 여부를 유지한 제안을 만들고 원래 설정·실행 상태를 복원합니다. 새 적용 흐름은 서버가 지원할 때 사용자 확인 후 저장·재시작합니다(구버전 서버는 성공 시 자동 적용). 현재값만 측정할 때는 용량도 바꾸지 않습니다. 문맥 선택지 32K·64K·128K·256K는 수동 설정용이며, 최적 문맥 자동 탐색은 확인되지 않아 수행하지 않습니다.</p><p>캐시 선택지는 8·16·32·64·128·192·256·384·512 GiB입니다. 여유 디스크의 20% 이하인 가장 큰 선택지를 고르며, 해당 선택지가 없으면 확인된 규칙대로 최소 8 GiB를 선택합니다. 이는 저장 상한으로 즉시 공간을 예약하지 않으며, 디스크 여유 공간을 보장하지 않습니다.</p></article>
+    <article class="panel"><div class="panel-heading"><h2>측정 진행 / 마지막 결과</h2><span id="tune-pending" class="tag hidden">적용 대기 중</span></div><p id="tune-environment"></p><p id="tune-state" class="muted" aria-live="polite">아직 측정한 결과가 없습니다.</p><button id="tune-view" class="secondary">진행 / 결과 보기</button><div class="table-wrap"><table><thead><tr><th>단계 / 후보</th><th>점수 · tok/s</th><th>상태</th></tr></thead><tbody id="tune-results"></tbody></table></div></article>
+    <article class="panel"><h2>Mac 환경 / 문맥별 측정 기록</h2><p id="tuning-history-note"></p><label for="tuning-history-select">이전 측정 선택</label><select id="tuning-history-select"></select><div class="button-row"><button id="tuning-history-open" class="secondary">보관 기록 보기</button></div></article>
+  </section>
+
+  <section id="clients" class="tab">
+    <div class="section-title client-title"><p class="eyebrow">CHOOSE YOUR TOOLS</p><h1>클라이언트 연결</h1><p>Pi · opencode는 모델 목록에, Claude Code · Codex CLI는 전용 명령으로 연결합니다.</p></div>
+    <div id="client-list" class="client-grid"></div>
+    <details class="client-notice"><summary>연결 전 확인 · CLI는 별도 설치</summary><p>다른 모델·기본 모델·로그인은 유지하고 설정 변경 전 백업을 만듭니다. Flint 사용 전 상단 대시보드에서 서버를 시작하세요.</p><p>각 CLI는 직접 설치해야 합니다. 외부 트래픽·도구 실행·파일 접근 권한은 해당 CLI 설정에 따릅니다. 로컬 추론 연결이 완전 오프라인이나 도구 실행 안전성을 보장하지 않습니다. Claude 데스크톱 / ChatGPT Codex 앱 전환 및 인증 프록시는 제공하지 않습니다.</p></details>
+  </section>
+
+  <section id="settings" class="tab">
+    <div class="section-title"><p class="eyebrow">MAKE IT YOURS</p><h1>명확한 설정, 예측 가능한 동작.</h1><p>설정 변경은 서버를 중지한 상태에서 저장합니다. 엔진 재시작 시 적용됩니다.</p></div>
+    <form id="settings-form" class="panel"><div class="form-grid">
+      <label>전체 문맥 토큰<input name="context" type="number" min="4096" max="262144" list="context-choices" required><datalist id="context-choices"><option value="32768"><option value="65536"><option value="131072"><option value="262144"></datalist><small>입력 + 출력 총 한도 · 자동 튜닝에서도 현재값 유지</small></label>
+      <label>추론 API 포트<input name="port" type="number" min="1024" max="65535" required><small>127.0.0.1 전용 · 웹 포트와 달라야 함</small></label>
+      <label>GPU workers<select name="workers" required></select><small>감지한 칩·GPU 코어 기준 · 검증 불가 시 기본값만 새로 저장 가능</small></label>
+      <label>Prefill chunk<select name="chunk"><option>1024</option><option>2048</option><option>4096</option></select></label>
+      <label>Temperature<input name="temperature" type="number" min="0" max="2" step="0.05" required></label>
+      <label>Top P<input name="top_p" type="number" min="0.01" max="1" step="0.01" required></label>
+      <label>Top K<input name="top_k" type="number" min="0" max="150144" required></label>
+      <label>Presence penalty<input name="presence_penalty" type="number" min="-2" max="2" step="0.1" required></label>
+      <label>출력 토큰 상한<input name="output_limit" type="number" min="1" max="32768" required></label>
+      <label>SSD 캐시 용량 · GiB<input name="cache_gb" type="number" min="1" max="512" required><small>수동 설정 또는 전체 자동 튜닝의 디스크 기준 선택</small></label>
+      <label class="checkbox"><input name="disk_cache" type="checkbox"> SSD 프롬프트 캐시 사용</label>
+    </div><p class="hint">SSD 캐시는 반복 접두사의 TTFT 개선용이며 decode 속도 향상을 보장하지 않습니다. 대화에서 파생된 KV 데이터가 디스크에 남을 수 있습니다. 끄는 것만으로 삭제되지 않습니다.</p><button class="primary" type="submit">설정 저장</button></form>
+    <article class="panel"><div class="panel-heading"><h2>캐시 정리</h2><span id="cache-total" class="tag">—</span></div><p>Flint Kit의 SSD 프롬프트 캐시만 삭제합니다. 모델과 다른 앱의 데이터는 건드리지 않습니다. 서버를 먼저 중지하세요.</p><button data-action="/api/cache/clear" data-confirm="Flint Kit의 SSD 프롬프트 캐시를 삭제할까요? 이 작업은 되돌릴 수 없습니다. 모델은 삭제하지 않습니다." class="danger">SSD 캐시 삭제</button></article>
+  </section>
+
+  <section id="activity" class="tab">
+    <div class="section-title"><p class="eyebrow">ENGINE OBSERVABILITY</p><h1>상태는 요약하고, 필요할 때 자세히.</h1><p>요청 내용 없이 수치와 오류 분류만 표시합니다. 과거 요청 수치는 현재 실행의 실시간 속도가 아닙니다.</p></div>
+    <article class="panel"><h2>메모리 & 캐시</h2><p id="memory-detail"></p><p>RSS는 소유 엔진과 자식 프로세스의 상주 메모리 합계입니다. 공유 메모리가 중복 집계될 수 있으며 Mac 전체 메모리 압력이나 MLX 할당량과 같은 값이 아닙니다.</p><p id="memory-peaks"></p><p>SSD 캐시 <strong id="cache-size">— GiB</strong> · <span id="cache-description"></span></p></article>
+    <article class="panel"><h2>엔진 오류 요약</h2><p id="engine-errors-note"></p><ul id="engine-errors"></ul><p>최근 로그 최대 64 KiB의 오류 흔적을 분류합니다. 실제 오류 횟수와 다를 수 있습니다. 프롬프트·키가 섞일 수 있는 원문과 traceback은 웹에 노출하지 않으며, 자세한 원문은 비공개 <code>engine.log</code>에서 확인하세요.</p></article>
+    <article class="panel"><details id="request-details"><summary>최근 요청별 성능 · 펼쳐 보기</summary><p>완료·취소·실패 기록과 제공된 수치만 표시합니다. 값이 없으면 추정하지 않습니다. 튜닝 요청도 포함될 수 있습니다.</p><div class="table-wrap"><table><thead><tr>    <th>기록 시각 (최근순)</th><th>상태</th><th>입력 / 출력 토큰</th><th>재사용 토큰</th>    <th>TTFT / 전체 시간</th><th>입력 / 생성 시간</th><th>입력 / 생성 속도</th></tr></thead><tbody id="request-history"></tbody></table></div></details></article>
+    <article class="panel"><div class="panel-heading"><h2>활동 스트림</h2><span class="tag">최근 100개</span></div><pre id="logs" class="logs" aria-label="활동 로그"></pre></article>
+    <article class="panel"><h2>API 연결 정보</h2><p><code id="api-detail"></code></p><p>OpenAI Chat Completions · Anthropic Messages · Responses API를 지원하는 Python 패치를 사용합니다. 모든 호환성을 보장하지는 않습니다.</p><p>인증 키는 전용 데이터 폴더의 <code>rec/config/api-key</code>에 보관됩니다. Pi/opencode 연결에는 파일 참조만 저장하며 전용 실행기도 파일을 읽습니다. Anthropic/OpenAI 클라우드 키가 아닙니다.</p></article>
+  </section>
+  <footer><span>Flint Kit · independent, inspectable, personal.</span><span>rec v0.1.1 + Apache-2.0 overlay</span></footer>
+  </div>
+</main>
+<dialog id="confirm-dialog"><form method="dialog"><p class="eyebrow">YOU ARE IN CONTROL</p><h2>실행 전 확인</h2><p id="confirm-text"></p><div class="button-row"><button value="cancel" class="secondary">취소</button><button value="confirm" class="primary">확인하고 실행</button></div></form></dialog>
+<dialog id="tuning-dialog" aria-labelledby="tuning-title">
+  <p class="eyebrow">MEASURE ON THIS MAC</p><h2 id="tuning-title" tabindex="-1">자동 튜닝</h2>
+  <p id="tuning-status" role="status" aria-live="polite"></p>
+  <p id="tuning-request-error" class="alert hidden" role="alert"></p>
+  <progress id="tuning-progress" aria-label="완료한 후보 시험"></progress>
+  <p id="tuning-timing" class="muted"></p><p id="tuning-warning" class="hint"></p>
+  <div class="table-wrap"><table><thead><tr><th>실측 지표 / 출처</th><th>측정 기준</th><th>찾은 값</th><th>차이</th></tr></thead><tbody id="tuning-speeds"></tbody></table></div>
+  <details id="tuning-details"><summary>값마다 잰 것</summary><div class="table-wrap"><table><thead><tr><th>단계 / 후보</th><th>짧은 대화</th><th>긴 대화</th><th>읽기</th><th>상태</th></tr></thead><tbody id="tuning-trials"></tbody></table></div></details>
+  <div class="table-wrap"><table><thead><tr><th>설정</th><th>측정 전</th><th>제안 / 적용값</th><th>변경</th></tr></thead><tbody id="tuning-settings"></tbody></table></div>
+  <p id="tuning-environment" class="muted"></p>
+  <div class="button-row"><button id="tuning-close" class="secondary">닫기</button><button id="tuning-later" class="secondary">나중에 적용</button><button id="tuning-apply" class="primary">적용하고 다시 시작</button><button id="tuning-cancel" class="danger">취소 · 원본 복원</button></div>
+</dialog>
+<div id="navigation-root" hidden></div>
+</body>
+</html>

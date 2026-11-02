@@ -1,0 +1,17 @@
+{
+  "name": "flint-kit-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@use-funnel/browser": "0.0.17",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}
